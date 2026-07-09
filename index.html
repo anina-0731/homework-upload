@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小升初每日作业打卡系统 (Supabase版)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #6c5ce7;
+            --success-color: #00b894;
+            --warning-color: #ffeaa7;
+            --danger-color: #ff7675;
+            --bg-color: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 0; color: #333;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white; text-align: center; padding: 20px 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px; margin: 20px auto; padding: 0 15px;
+            display: grid; grid-template-columns: 1fr; gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .container { grid-template-columns: 1fr 1fr; }
+            .mobile-view { border-right: 2px solid #eee; }
+        }
+
+        .card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+
+        h2 { margin-top: 0; color: var(--primary-color); border-bottom: 2px solid #f1f2f6; padding-bottom: 10px; }
+
+        .status-board {
+            display: flex; justify-content: space-around; background: #f1f2f6;
+            padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;
+        }
+
+        .status-num { font-size: 24px; font-weight: bold; color: var(--primary-color); }
+
+        label { display: block; margin: 10px 0 5px; font-weight: bold; }
+
+        select, textarea, input[type="file"] {
+            width: 100%; padding: 10px; margin-bottom: 15px;
+            border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;
+        }
+
+        button {
+            width: 100%; background-color: var(--primary-color); color: white;
+            border: none; padding: 12px; font-size: 16px; border-radius: 6px;
+            cursor: pointer; transition: background 0.2s;
+        }
+
+        button:hover { background-color: #5b4bc4; }
+
+        .rate-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        .btn-rate { color: white; font-weight: bold; }
+        .btn-exe { background-color: #2ecc71; }
+        .btn-good { background-color: #3498db; }
+        .btn-okk { background-color: #9b59b6; }
+        .btn-bad { background-color: #e74c3c; }
+
+        .job-item { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fff; }
+        .job-item.pending { border-left: 5px solid #f1c40f; }
+        .job-item.reviewed { border-left: 5px solid #2ecc71; }
+
+        .preview-img { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 10px; display: block; cursor: pointer;}
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; color: white; margin-left: 5px; }
+
+        .modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 3px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-radius: 12px; z-index: 1000; text-align: center; width: 80%; max-width: 400px;
+        }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎒 小升初冲刺·每日作业督促站</h1>
+        <p>今日事今日毕，九月自信迈入新学校！</p>
+    </header>
+
+    <div class="container">
+        <div class="card mobile-view">
+            <h2>📱 妹妹的打卡端</h2>
+            <div class="status-board">
+                <div>
+                    <div>当前总积分</div>
+                    <div class="status-num" id="total-score">0</div>
+                </div>
+                <div>
+                    <div>累计打卡天数</div>
+                    <div class="status-num" id="checkin-days">0</div>
+                </div>
+            </div>
+
+            <form id="upload-form">
+                <label for="subject">📚 选择学科</label>
+                <select id="subject" required>
+                    <option value="语文">语文 📝</option>
+                    <option value="数学">数学 📐</option>
+                    <option value="英语">英语 🔤</option>
+                    <option value="其他">其他学科 🎨</option>
+                </select>
+
+                <label for="text-content">✍️ 作业文字内容 / 备注说明</label>
+                <textarea id="text-content" rows="3" placeholder="可以在这里输入作业答案或写下遇到的难题..."></textarea>
+
+                <label for="file-input">📷 上传作业照片 (可选 - 会自动转为图片链接)</label>
+                <input type="file" id="file-input" accept="image/*">
+
+                <button type="submit" id="submit-btn">🚀 提交作业打卡</button>
+            </form>
+
+            <h3 style="margin-top:25px;">💬 最新家长回音壁</h3>
+            <div id="reply-box" style="background: #f9f9f9; padding: 15px; border-radius: 8px; min-height: 60px; font-style: italic; color: #555;">
+                等待哥哥/姐姐查看作业后回复...
+            </div>
+        </div>
+
+        <div class="card pc-view">
+            <h2>💻 家长管理后台 <button onclick="fetchData()" style="width:auto; padding:5px 10px; font-size:12px; float:right;">🔄 手动刷新</button></h2>
+            <div id="admin-score-board" style="margin-bottom: 15px; font-weight: bold; color: #555;">
+                妹妹当前积分：<span id="admin-score-val" style="color:var(--primary-color)">0</span> 分
+            </div>
+            <div id="job-list">
+                <p style="color: #999; text-align: center;">正在同步云端数据...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="modal" id="reward-modal">
+        <div class="modal-content" style="padding: 30px;">
+            <h2 style="color: var(--success-color); border:none; font-size: 28px;">🎉 提交成功！</h2>
+            <p id="encourage-text" style="font-size: 18px; font-weight: bold; margin: 20px 0; color: #555;"></p>
+            <button onclick="closeModal()" style="background-color: var(--success-color);">我会继续努力！</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 1. 初始化 Supabase ====================
+        const SUPABASE_URL = 'https://onubrzrncwxvmqjiimcq.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_B-dOXD7PvhPk8-yAoZRXNw_nCEyaZne';
+
+        let supabaseClient = null;
+        if(SUPABASE_URL !== 'https://onubrzrncwxvmqjiimcq.supabase.co') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } else {
+            alert("提示：请先在代码第 167-168 行配置您的 Supabase URL 和 Key！");
+        }
+
+        let checkInCount = parseInt(localStorage.getItem('checkInCount') || '0');
+        const encouragements = [
+            "太棒了！离优秀的初中生又近了一步！🌟",
+            "书山有路勤为径，今天的你非常有毅力！💪",
+            "字迹很工整/思考很认真，继续保持哦！✨",
+            "完成一项大任务，今晚可以稍微放松一下啦！🚀",
+            "坚持就是胜利，小升初冲刺冲冲冲！🔥"
+        ];
+
+        // 将文件转为 Base64 字符串（免去配置 Supabase Storage 桶的麻烦，直接存进数据库）
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
+        // ==================== 2. 妹妹端：提交作业 ====================
+        document.getElementById('upload-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if(!supabaseClient) return;
+
+            // 限制工作日上传
+            const today = new Date();
+            const dayOfWeek = today.getDay(); 
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                alert("今天是周末哦！好好休息，周一到周五再来打卡吧！☕");
+                return;
+            }
+
+            const subject = document.getElementById('subject').value;
+            const textContent = document.getElementById('text-content').value;
+            const fileInput = document.getElementById('file-input');
+            const submitBtn = document.getElementById('submit-btn');
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "正在拼命上传数据...";
+
+            try {
+                let imgData = "";
+                if (fileInput.files.length > 0) {
+                    imgData = await toBase64(fileInput.files[0]);
+                }
+
+                // 写入 Supabase
+                const { error } = await supabaseClient
+                    .from('homework')
+                    .insert([{ subject, content: textContent, image_url: imgData, status: 'pending' }]);
+
+                if (error) throw error;
+
+                // 打卡天数累加
+                checkInCount++;
+                localStorage.setItem('checkInCount', checkInCount);
+
+                // 弹窗鼓励
+                document.getElementById('encourage-text').innerText = encouragements[Math.floor(Math.random() * encouragements.length)];
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('reward-modal').style.display = 'block';
+
+                document.getElementById('upload-form').reset();
+                fetchData();
+            } catch (error) {
+                console.error(error);
+                alert("上传失败：" + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "🚀 提交作业打卡";
+            }
+        });
+
+        function closeModal() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('reward-modal').style.display = 'none';
+        }
+
+        // ==================== 3. 同步拉取与数据渲染 ====================
+        async function fetchData() {
+            document.getElementById('checkin-days').innerText = checkInCount;
+            if(!supabaseClient) return;
+
+            try {
+                // 1. 获取总积分
+                const { data: scoreData } = await supabaseClient.from('total_score').select('score').eq('id', 1).single();
+                if(scoreData) {
+                    document.getElementById('total-score').innerText = scoreData.score;
+                    document.getElementById('admin-score-val').innerText = scoreData.score;
+                }
+
+                // 2. 获取作业列表
+                const { data: hwList, error } = await supabaseClient.from('homework').select('*').order('created_at', { ascending: false }).limit(20);
+                if (error) throw error;
+
+                const jobListContainer = document.getElementById('job-list');
+                jobListContainer.innerHTML = "";
+
+                if(!hwList || hwList.length === 0) {
+                    jobListContainer.innerHTML = `<p style="color: #999; text-align: center;">暂无上传的作业数据。</p>`;
+                    return;
+                }
+
+                // 更新妹妹端最新的家长回复
+                const lastReviewed = hwList.find(item => item.status === 'reviewed');
+                if (lastReviewed) {
+                    document.getElementById('reply-box').innerHTML = `
+                        <strong>家长评级：</strong> [${lastReviewed.rate}] <br>
+                        <strong>家长寄语：</strong> ${lastReviewed.reply || '无评语'}
+                    `;
+                }
+
+                // 渲染电脑后台列表
+                hwList.forEach(hw => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = `job-item ${hw.status}`;
+                    let mediaHtml = hw.image_url ? `<img src="${hw.image_url}" class="preview-img" onclick="window.open('${hw.image_url}')">` : '';
+                    let actionHtml = '';
+
+                    if (hw.status === 'pending') {
+                        actionHtml = `
+                            <div style="margin-top:10px;">
+                                <label style="font-size:12px;">✍️ 写回复/答疑：</label>
+                                <textarea id="reply-text-${hw.id}" rows="2" placeholder="指出错误或给予夸奖..."></textarea>
+                                <div class="rate-buttons">
+                                    <button class="btn-rate btn-exe" onclick="reviewHomework(${hw.id}, '优秀', 5)">优秀 (+5分)</button>
+                                    <button class="btn-rate btn-good" onclick="reviewHomework(${hw.id}, '不错哦', 3)">不错哦 (+3分)</button>
+                                    <button class="btn-rate btn-okk" onclick="reviewHomework(${hw.id}, 'okk', 1)">okk (+1分)</button>
+                                    <button class="btn-rate btn-bad" onclick="reviewHomework(${hw.id}, '不中嘞', -2)">不中嘞 (-2分)</button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        actionHtml = `
+                            <div style="margin-top:10px; background:#f5f6fa; padding:10px; border-radius:6px; font-size:14px;">
+                                🔵 <strong>已评定：</strong> <span style="color:var(--primary-color)">${hw.rate}</span><br>
+                                💬 <strong>回复：</strong> ${hw.reply || '无'}
+                            </div>
+                        `;
+                    }
+
+                    itemDiv.innerHTML = `
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong>${hw.subject}作业</strong> 
+                            <span class="badge" style="background-color:${hw.status === 'pending'?'#f1c40f':'#2ecc71'}">${hw.status === 'pending'?'待批改':'已批改'}</span>
+                        </div>
+                        <div style="font-size:12px; color:#999; margin:5px 0;">提交时间：${new Date(hw.created_at).toLocaleString()}</div>
+                        <p style="white-space: pre-wrap; background:#fcfcfc; padding:5px; border-radius:4px;">${hw.content || '(无文字描述)'}</p>
+                        ${mediaHtml}
+                        ${actionHtml}
+                    `;
+                    jobListContainer.appendChild(itemDiv);
+                });
+
+            } catch (error) {
+                console.error("加载失败", error);
+            }
+        }
+
+        // ==================== 4. 电脑端：批改作业 ====================
+        async function reviewHomework(id, rateType, scoreChange) {
+            const replyText = document.getElementById(`reply-text-${id}`).value;
+            try {
+                // 1. 更新作业记录
+                const { error: hwErr } = await supabaseClient.from('homework').update({ status: 'reviewed', rate: rateType, reply: replyText }).eq('id', id);
+                if (hwErr) throw hwErr;
+
+                // 2. 先取出当前积分，再计算并写入（RPC安全写法或直接获取更新）
+                const { data: scoreData } = await supabaseClient.from('total_score').select('score').eq('id', 1).single();
+                let newScore = (scoreData ? scoreData.score : 0) + scoreChange;
+                
+                const { error: scoreErr } = await supabaseClient.from('total_score').update({ score: newScore }).eq('id', 1);
+                if (scoreErr) throw scoreErr;
+
+                alert(`批改成功！评级：[${rateType}]，积分变动：${scoreChange > 0 ? '+' : ''}${scoreChange}`);
+                fetchData();
+            } catch (error) {
+                console.error(error);
+                alert("批改保存失败: " + error.message);
+            }
+        }
+
+        window.onload = function() {
+            fetchData();
+            // 每隔 20 秒自动更新一次多端数据
+            setInterval(fetchData, 20000);
+        };
+    </script>
+</body>
+</html>
