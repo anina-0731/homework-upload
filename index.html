@@ -3,352 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小升初每日作业打卡系统 (Supabase版)</title>
+    <title>妹妹的作业打卡与积分系统</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --primary-color: #6c5ce7;
-            --success-color: #00b894;
-            --warning-color: #ffeaa7;
-            --danger-color: #ff7675;
-            --bg-color: #f8f9fa;
+            --primary-color: #ff7675;
+            --secondary-color: #ffeaa7;
+            --bg-color: #f7f1e3;
+            --text-color: #2c3e50;
         }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
-            margin: 0; padding: 0; color: #333;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-
-        header {
-            background-color: var(--primary-color);
-            color: white; text-align: center; padding: 20px 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
         .container {
-            max-width: 1200px; margin: 20px auto; padding: 0 15px;
-            display: grid; grid-template-columns: 1fr; gap: 20px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            max-width: 600px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 20px;
         }
-
-        @media (min-width: 768px) {
-            .container { grid-template-columns: 1fr 1fr; }
-            .mobile-view { border-right: 2px solid #eee; }
+        h1, h2 {
+            text-align: center;
+            color: var(--primary-color);
         }
-
-        .card {
-            background: white; border-radius: 12px; padding: 20px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.05); margin-bottom: 20px;
+        .form-group {
+            margin-bottom: 20px;
         }
-
-        h2 { margin-top: 0; color: var(--primary-color); border-bottom: 2px solid #f1f2f6; padding-bottom: 10px; }
-
-        .status-board {
-            display: flex; justify-content: space-around; background: #f1f2f6;
-            padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
-
-        .status-num { font-size: 24px; font-weight: bold; color: var(--primary-color); }
-
-        label { display: block; margin: 10px 0 5px; font-weight: bold; }
-
-        select, textarea, input[type="file"] {
-            width: 100%; padding: 10px; margin-bottom: 15px;
-            border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;
+        select, textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dfe4ea;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
         }
-
+        select:focus, textarea:focus, input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
         button {
-            width: 100%; background-color: var(--primary-color); color: white;
-            border: none; padding: 12px; font-size: 16px; border-radius: 6px;
-            cursor: pointer; transition: background 0.2s;
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(255, 118, 117, 0.3);
+            transition: transform 0.2s, background-color 0.3s;
         }
-
-        button:hover { background-color: #5b4bc4; }
-
-        .rate-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
-        .btn-rate { color: white; font-weight: bold; }
-        .btn-exe { background-color: #2ecc71; }
-        .btn-good { background-color: #3498db; }
-        .btn-okk { background-color: #9b59b6; }
-        .btn-bad { background-color: #e74c3c; }
-
-        .job-item { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fff; }
-        .job-item.pending { border-left: 5px solid #f1c40f; }
-        .job-item.reviewed { border-left: 5px solid #2ecc71; }
-
-        .preview-img { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 10px; display: block; cursor: pointer;}
-        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; color: white; margin-left: 5px; }
-
-        .modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; padding: 3px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border-radius: 12px; z-index: 1000; text-align: center; width: 80%; max-width: 400px;
+        button:hover {
+            background-color: #fab1a0;
+            transform: translateY(-2px);
         }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+        .card {
+            background: #f1f2f6;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .score-board {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2ed573;
+            margin: 20px 0;
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-review {
+            padding: 10px;
+            font-size: 14px;
+            box-shadow: none;
+        }
+        .btn-excellent { background-color: #2ed573; box-shadow: 0 3px 6px rgba(46, 213, 115, 0.3); }
+        .btn-good { background-color: #1e90ff; box-shadow: 0 3px 6px rgba(30, 144, 255, 0.3); }
+        .btn-ok { background-color: #ffa502; box-shadow: 0 3px 6px rgba(255, 165, 2, 0.3); }
+        .btn-bad { background-color: #ff4757; box-shadow: 0 3px 6px rgba(255, 71, 87, 0.3); }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🎒 小升初冲刺·每日作业督促站</h1>
-        <p>今日事今日毕，九月自信迈入新学校！</p>
-    </header>
-
-    <div class="container">
-        <div class="card mobile-view">
-            <h2>📱 妹妹的打卡端</h2>
-            <div class="status-board">
-                <div>
-                    <div>当前总积分</div>
-                    <div class="status-num" id="total-score">0</div>
-                </div>
-                <div>
-                    <div>累计打卡天数</div>
-                    <div class="status-num" id="checkin-days">0</div>
-                </div>
-            </div>
-
-            <form id="upload-form">
-                <label for="subject">📚 选择学科</label>
-                <select id="subject" required>
-                    <option value="语文">语文 📝</option>
-                    <option value="数学">数学 📐</option>
-                    <option value="英语">英语 🔤</option>
-                    <option value="其他">其他学科 🎨</option>
-                </select>
-
-                <label for="text-content">✍️ 作业文字内容 / 备注说明</label>
-                <textarea id="text-content" rows="3" placeholder="可以在这里输入作业答案或写下遇到的难题..."></textarea>
-
-                <label for="file-input">📷 上传作业照片 (可选 - 会自动转为图片链接)</label>
-                <input type="file" id="file-input" accept="image/*">
-
-                <button type="submit" id="submit-btn">🚀 提交作业打卡</button>
-            </form>
-
-            <h3 style="margin-top:25px;">💬 最新家长回音壁</h3>
-            <div id="reply-box" style="background: #f9f9f9; padding: 15px; border-radius: 8px; min-height: 60px; font-style: italic; color: #555;">
-                等待哥哥/姐姐查看作业后回复...
-            </div>
+    <div class="container" id="mobile-view">
+        <h1>🎒 妹妹的作业打卡</h1>
+        <div class="score-board">当前总积分：<span id="current-score">0</span> 分</div>
+        
+        <div class="form-group">
+            <label for="subject">选择学科：</label>
+            <select id="subject">
+                <option value="语文">📝 语文</option>
+                <option value="数学">📐 数学</option>
+                <option value="英语">🔤 英语</option>
+                <option value="其他">🎨 其他学科</option>
+            </select>
         </div>
 
-        <div class="card pc-view">
-            <h2>💻 家长管理后台 <button onclick="fetchData()" style="width:auto; padding:5px 10px; font-size:12px; float:right;">🔄 手动刷新</button></h2>
-            <div id="admin-score-board" style="margin-bottom: 15px; font-weight: bold; color: #555;">
-                妹妹当前积分：<span id="admin-score-val" style="color:var(--primary-color)">0</span> 分
-            </div>
-            <div id="job-list">
-                <p style="color: #999; text-align: center;">正在同步云端数据...</p>
-            </div>
+        <div class="form-group">
+            <label for="content">作业文本内容 / 打卡心情：</label>
+            <textarea id="content" rows="4" placeholder="在这里写下今天的作业题目或心得..."></textarea>
         </div>
+
+        <div class="form-group">
+            <label for="image-url">作业图片链接 (选填)：</label>
+            <input type="text" id="image-url" placeholder="可粘贴图片网盘链接或直接填纯文本打卡">
+        </div>
+
+        <button onclick="submitHomework()">🚀 提交打卡并累计打卡</button>
+
+        <h2 style="margin-top: 30px;">💬 姐姐的最新回复</h2>
+        <div id="reply-container" class="card">暂无新回复，继续加油哦！</div>
     </div>
 
-    <div class="overlay" id="overlay"></div>
-    <div class="modal" id="reward-modal">
-        <div class="modal-content" style="padding: 30px;">
-            <h2 style="color: var(--success-color); border:none; font-size: 28px;">🎉 提交成功！</h2>
-            <p id="encourage-text" style="font-size: 18px; font-weight: bold; margin: 20px 0; color: #555;"></p>
-            <button onclick="closeModal()" style="background-color: var(--success-color);">我会继续努力！</button>
-        </div>
+    <div class="container" id="pc-view">
+        <h1>🖥️ 姐姐的作业检查后台</h1>
+        <button onclick="fetchHomework()" style="background-color: #2f3542; margin-bottom: 20px;">🔄 刷新作业列表</button>
+        <div id="homework-list">加载中...</div>
     </div>
 
     <script>
-        // ==================== 1. 初始化 Supabase ====================
-        const SUPABASE_URL = 'https://xpvpogzuevmsrzppvnfz.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9udWJyenJuY3d4dm1xamlpbWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMTk1OTIsImV4cCI6MjA5MTc5NTU5Mn0.m1qH1kMyPktCo_qP_qJkSY7f5bFjeZG_ta22iFvGUgg';
+        // ==========================================
+        // 🌟 【核心配置区】 
+        // ==========================================
+        const SUPABASE_URL = 'https://onubrzrncwxvmqjiimcq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdnBvZ3p1ZXZtc3J6cHB2bmZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1NjY0ODYsImV4cCI6MjA5OTE0MjQ4Nn0.6QKsUX9nevlzjtDNUmaBpY603BQnoAme153gmw0av0s'; // <-- ⚠️ 请把以 eyJ 开头的长密钥粘贴在这两个单引号之间！
 
-        let supabaseClient = null;
-        if(SUPABASE_URL !== 'https://xpvpogzuevmsrzppvnfz.supabase.co') {
-            supabaseClient = supabase.createClient(https://xpvpogzuevmsrzppvnfz.supabase.co, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9udWJyenJuY3d4dm1xamlpbWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMTk1OTIsImV4cCI6MjA5MTc5NTU5Mn0.m1qH1kMyPktCo_qP_qJkSY7f5bFjeZG_ta22iFvGUgg);
-        } else {
-            alert("提示：请先在代码第 167-168 行配置您的 Supabase URL 和 Key！");
-        }
+        // ==========================================
+        // 🛠️ 【修复完成的 Supabase 初始化】 
+        // ==========================================
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let checkInCount = parseInt(localStorage.getItem('checkInCount') || '0');
-        const encouragements = [
-            "太棒了！离优秀的初中生又近了一步！🌟",
-            "书山有路勤为径，今天的你非常有毅力！💪",
-            "字迹很工整/思考很认真，继续保持哦！✨",
-            "完成一项大任务，今晚可以稍微放松一下啦！🚀",
-            "坚持就是胜利，小升初冲刺冲冲冲！🔥"
-        ];
+        // 初始化页面数据
+        window.onload = function() {
+            fetchScore();
+            fetchLatestReply();
+            fetchHomework();
+        };
 
-        // 将文件转为 Base64 字符串（免去配置 Supabase Storage 桶的麻烦，直接存进数据库）
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
+        // 1. 妹妹提交作业
+        async function submitHomework() {
+            const subject = document.getElementById('subject').value;
+            const content = document.getElementById('content').value;
+            const imageUrl = document.getElementById('image-url').value;
 
-        // ==================== 2. 妹妹端：提交作业 ====================
-        document.getElementById('upload-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            if(!supabaseClient) return;
-
-            // 限制工作日上传
-            const today = new Date();
-            const dayOfWeek = today.getDay(); 
-            if (dayOfWeek === 0 || dayOfWeek === 6) {
-                alert("今天是周末哦！好好休息，周一到周五再来打卡吧！☕");
+            if(!content.trim()) {
+                alert("请输入作业内容哦！");
                 return;
             }
 
-            const subject = document.getElementById('subject').value;
-            const textContent = document.getElementById('text-content').value;
-            const fileInput = document.getElementById('file-input');
-            const submitBtn = document.getElementById('submit-btn');
+            const { data, error } = await supabaseClient
+                .from('homework')
+                .insert([{ subject, content, image_url: imageUrl, status: '未回复' }]);
 
-            submitBtn.disabled = true;
-            submitBtn.innerText = "正在拼命上传数据...";
-
-            try {
-                let imgData = "";
-                if (fileInput.files.length > 0) {
-                    imgData = await toBase64(fileInput.files[0]);
-                }
-
-                // 写入 Supabase
-                const { error } = await supabaseClient
-                    .from('homework')
-                    .insert([{ subject, content: textContent, image_url: imgData, status: 'pending' }]);
-
-                if (error) throw error;
-
-                // 打卡天数累加
-                checkInCount++;
-                localStorage.setItem('checkInCount', checkInCount);
-
-                // 弹窗鼓励
-                document.getElementById('encourage-text').innerText = encouragements[Math.floor(Math.random() * encouragements.length)];
-                document.getElementById('overlay').style.display = 'block';
-                document.getElementById('reward-modal').style.display = 'block';
-
-                document.getElementById('upload-form').reset();
-                fetchData();
-            } catch (error) {
-                console.error(error);
-                alert("上传失败：" + error.message);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "🚀 提交作业打卡";
-            }
-        });
-
-        function closeModal() {
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('reward-modal').style.display = 'none';
-        }
-
-        // ==================== 3. 同步拉取与数据渲染 ====================
-        async function fetchData() {
-            document.getElementById('checkin-days').innerText = checkInCount;
-            if(!supabaseClient) return;
-
-            try {
-                // 1. 获取总积分
-                const { data: scoreData } = await supabaseClient.from('total_score').select('score').eq('id', 1).single();
-                if(scoreData) {
-                    document.getElementById('total-score').innerText = scoreData.score;
-                    document.getElementById('admin-score-val').innerText = scoreData.score;
-                }
-
-                // 2. 获取作业列表
-                const { data: hwList, error } = await supabaseClient.from('homework').select('*').order('created_at', { ascending: false }).limit(20);
-                if (error) throw error;
-
-                const jobListContainer = document.getElementById('job-list');
-                jobListContainer.innerHTML = "";
-
-                if(!hwList || hwList.length === 0) {
-                    jobListContainer.innerHTML = `<p style="color: #999; text-align: center;">暂无上传的作业数据。</p>`;
-                    return;
-                }
-
-                // 更新妹妹端最新的家长回复
-                const lastReviewed = hwList.find(item => item.status === 'reviewed');
-                if (lastReviewed) {
-                    document.getElementById('reply-box').innerHTML = `
-                        <strong>家长评级：</strong> [${lastReviewed.rate}] <br>
-                        <strong>家长寄语：</strong> ${lastReviewed.reply || '无评语'}
-                    `;
-                }
-
-                // 渲染电脑后台列表
-                hwList.forEach(hw => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = `job-item ${hw.status}`;
-                    let mediaHtml = hw.image_url ? `<img src="${hw.image_url}" class="preview-img" onclick="window.open('${hw.image_url}')">` : '';
-                    let actionHtml = '';
-
-                    if (hw.status === 'pending') {
-                        actionHtml = `
-                            <div style="margin-top:10px;">
-                                <label style="font-size:12px;">✍️ 写回复/答疑：</label>
-                                <textarea id="reply-text-${hw.id}" rows="2" placeholder="指出错误或给予夸奖..."></textarea>
-                                <div class="rate-buttons">
-                                    <button class="btn-rate btn-exe" onclick="reviewHomework(${hw.id}, '优秀', 5)">优秀 (+5分)</button>
-                                    <button class="btn-rate btn-good" onclick="reviewHomework(${hw.id}, '不错哦', 3)">不错哦 (+3分)</button>
-                                    <button class="btn-rate btn-okk" onclick="reviewHomework(${hw.id}, 'okk', 1)">okk (+1分)</button>
-                                    <button class="btn-rate btn-bad" onclick="reviewHomework(${hw.id}, '不中嘞', -2)">不中嘞 (-2分)</button>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        actionHtml = `
-                            <div style="margin-top:10px; background:#f5f6fa; padding:10px; border-radius:6px; font-size:14px;">
-                                🔵 <strong>已评定：</strong> <span style="color:var(--primary-color)">${hw.rate}</span><br>
-                                💬 <strong>回复：</strong> ${hw.reply || '无'}
-                            </div>
-                        `;
-                    }
-
-                    itemDiv.innerHTML = `
-                        <div style="display:flex; justify-content:space-between;">
-                            <strong>${hw.subject}作业</strong> 
-                            <span class="badge" style="background-color:${hw.status === 'pending'?'#f1c40f':'#2ecc71'}">${hw.status === 'pending'?'待批改':'已批改'}</span>
-                        </div>
-                        <div style="font-size:12px; color:#999; margin:5px 0;">提交时间：${new Date(hw.created_at).toLocaleString()}</div>
-                        <p style="white-space: pre-wrap; background:#fcfcfc; padding:5px; border-radius:4px;">${hw.content || '(无文字描述)'}</p>
-                        ${mediaHtml}
-                        ${actionHtml}
-                    `;
-                    jobListContainer.appendChild(itemDiv);
-                });
-
-            } catch (error) {
-                console.error("加载失败", error);
+            if (error) {
+                console.error("提交失败：", error);
+                alert("打卡失败，请按 F12 查看控制台错误原因");
+            } else {
+                const encourages = ["太棒啦！又是进步的一天！🌟", "打卡成功！你离优秀更近一步啦！💪", "真厉害，今晚奖励自己休息一下吧！🎉"];
+                alert(encourages[Math.floor(Math.random() * encourages.length)]);
+                document.getElementById('content').value = '';
+                document.getElementById('image-url').value = '';
+                fetchHomework();
             }
         }
 
-        // ==================== 4. 电脑端：批改作业 ====================
-        async function reviewHomework(id, rateType, scoreChange) {
+        // 2. 获取总积分
+        async function fetchScore() {
+            const { data, error } = await supabaseClient
+                .from('total_score')
+                .select('score')
+                .single();
+            
+            if (data) {
+                document.getElementById('current-score').innerText = data.score;
+            }
+        }
+
+        // 3. 获取最新回复
+        async function fetchLatestReply() {
+            const { data, error } = await supabaseClient
+                .from('homework')
+                .select('reply, reward_type')
+                .not('reply', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (data && data.length > 0) {
+                document.getElementById('reply-container').innerHTML = `
+                    <strong>评价等级：</strong> [${data[0].reward_type}]<br>
+                    <strong>答疑回复：</strong> ${data[0].reply}
+                `;
+            }
+        }
+
+        // 4. 电脑端：拉取所有作业
+        async function fetchHomework() {
+            const { data, error } = await supabaseClient
+                .from('homework')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                document.getElementById('homework-list').innerText = "加载失败，请检查配置。";
+                return;
+            }
+
+            let html = '';
+            data.forEach(item => {
+                const time = new Date(item.created_at).toLocaleString();
+                html += `
+                    <div class="card">
+                        <h3>【${item.subject}】提交时间：${time}</h3>
+                        <p><strong>内容：</strong>${item.content}</p>
+                        ${item.image_url ? `<p><strong>图片：</strong><a href="${item.image_url}" target="_blank">点击查看图片</a></p>` : ''}
+                        <p><strong>当前状态：</strong> ${item.status} (${item.reward_type || '未评分'})</p>
+                        ${item.reply ? `<p style="color: #666;"><strong>已回复：</strong>${item.reply}</p>` : `
+                            <div class="form-group">
+                                <input type="text" id="reply-text-${item.id}" placeholder="写点评价或答疑吧...">
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn-review btn-excellent" onclick="reviewHomework(${item.id}, '优秀', 5)">优秀 (+5分)</button>
+                                <button class="btn-review btn-good" onclick="reviewHomework(${item.id}, '不错哦', 3)">不错哦 (+3分)</button>
+                                <button class="btn-review btn-ok" onclick="reviewHomework(${item.id}, 'okk', 1)">okk (+1分)</button>
+                                <button class="btn-review btn-bad" onclick="reviewHomework(${item.id}, '不中嘞', -2)">不中嘞 (-2分)</button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            });
+            document.getElementById('homework-list').innerHTML = html || '妹妹今天还没有提交任何作业哦~';
+        }
+
+        // 5. 电脑端：批改作业并更新积分
+        async function reviewHomework(id, type, points) {
             const replyText = document.getElementById(`reply-text-${id}`).value;
-            try {
-                // 1. 更新作业记录
-                const { error: hwErr } = await supabaseClient.from('homework').update({ status: 'reviewed', rate: rateType, reply: replyText }).eq('id', id);
-                if (hwErr) throw hwErr;
+            if(!replyText.trim()) {
+                alert("请先填写回复内容再点击评分按钮！");
+                return;
+            }
 
-                // 2. 先取出当前积分，再计算并写入（RPC安全写法或直接获取更新）
-                const { data: scoreData } = await supabaseClient.from('total_score').select('score').eq('id', 1).single();
-                let newScore = (scoreData ? scoreData.score : 0) + scoreChange;
-                
-                const { error: scoreErr } = await supabaseClient.from('total_score').update({ score: newScore }).eq('id', 1);
-                if (scoreErr) throw scoreErr;
+            // A. 更新作业状态
+            const { error: err1 } = await supabaseClient
+                .from('homework')
+                .update({ reply: replyText, status: '已回复', reward_type: type })
+                .eq('id', id);
 
-                alert(`批改成功！评级：[${rateType}]，积分变动：${scoreChange > 0 ? '+' : ''}${scoreChange}`);
-                fetchData();
-            } catch (error) {
-                console.error(error);
-                alert("批改保存失败: " + error.message);
+            if(err1) { alert("评分失败"); return; }
+
+            // B. 获取当前分数并叠加积分
+            const { data: scoreData } = await supabaseClient.from('total_score').select('score').single();
+            let currentScore = scoreData ? scoreData.score : 0;
+            let newScore = currentScore + points;
+
+            const { error: err2 } = await supabaseClient
+                .from('total_score')
+                .update({ score: newScore })
+                .eq('id', 1); // 假设表里只有一行 id 为 1 的总分数据
+
+            if(!err2) {
+                alert(`评分成功！妹妹获得了 [${type}] 评价，积攒了 ${points} 分！`);
+                fetchHomework();
+                fetchScore();
             }
         }
-
-        window.onload = function() {
-            fetchData();
-            // 每隔 20 秒自动更新一次多端数据
-            setInterval(fetchData, 20000);
-        };
     </script>
 </body>
 </html>
